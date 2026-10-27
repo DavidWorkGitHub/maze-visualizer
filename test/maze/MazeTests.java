@@ -1,132 +1,164 @@
 package maze;
 
-import java.awt.image.BufferedImage;
-import java.awt.Graphics2D;
-import java.io.File;
-import java.util.Arrays;
-import java.util.NoSuchElementException;
-import javax.imageio.ImageIO;
-import javax.swing.SwingUtilities;
-import maze.Cell.Direction;
+/** Run this class to check the algorithms without opening a window. */
+public class MazeTests {
+    private static int checks = 0;
 
-/** Dependency-free regression tests; throws AssertionError on any failure. */
-public final class MazeTests {
-    private static int assertions;
     private static void check(boolean condition, String message) {
-        assertions++;
+        checks++;
         if (!condition) throw new AssertionError(message);
     }
-    private static void rejects(Runnable operation, Class<? extends RuntimeException> type) {
-        try { operation.run(); } catch (RuntimeException ex) {
-            check(type.isInstance(ex), "Unexpected exception: " + ex); return;
+
+    private static void testContainers() {
+        Cell a = new Cell(0, 0);
+        Cell b = new Cell(0, 1);
+        Cell c = new Cell(0, 2);
+        CellStack stack = new CellStack(2);
+        stack.push(a);
+        stack.push(b);
+        check(stack.peek() == b, "Peek should return the last added cell.");
+        check(stack.pop() == b, "Stack must remove newest first.");
+        check(stack.pop() == a, "Stack order is wrong.");
+        check(stack.isEmpty(), "Stack should be empty.");
+        try {
+            stack.pop();
+            throw new AssertionError("Empty pop should fail.");
+        } catch (IllegalStateException expected) { checks++; }
+
+        CellQueue queue = new CellQueue(2);
+        queue.enqueue(a);
+        queue.enqueue(b);
+        check(queue.dequeue() == a, "Queue must remove oldest first.");
+        queue.enqueue(c); // Reuse the space at the beginning of the array.
+        check(queue.dequeue() == b, "Queue wraparound changed the order.");
+        check(queue.dequeue() == c, "Queue wraparound lost a cell.");
+        check(queue.isEmpty(), "Queue should be empty.");
+        try {
+            queue.dequeue();
+            throw new AssertionError("Empty dequeue should fail.");
+        } catch (IllegalStateException expected) { checks++; }
+    }
+
+    // Independent distance check, using plain arrays instead of CellQueue.
+    private static int[][] findDistances(Maze maze) {
+        int rows = maze.getRows();
+        int columns = maze.getColumns();
+        int[][] distance = new int[rows][columns];
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < columns; c++) distance[r][c] = -1;
         }
-        throw new AssertionError("Expected " + type.getSimpleName());
-    }
-    private static Maze generated(int rows, int columns, long seed) {
-        Maze maze = new Maze(rows, columns);
-        MazeGenerator generator = new MazeGenerator(maze, seed);
-        int steps = 0;
-        while (!generator.isDone()) { generator.step(); check(++steps <= 2 * maze.size(), "DFS must terminate"); }
-        check(generator.visitedCount() == maze.size(), "DFS visits every cell");
-        generator.step();
-        return maze;
-    }
-    /** Independent array-based distance oracle, separate from the linked-queue solver. */
-    private static int[] distances(Maze maze) {
-        int[] distance = new int[maze.size()], queue = new int[maze.size()];
-        Arrays.fill(distance, -1);
-        distance[0] = 0;
-        int head = 0, tail = 1;
-        while (head < tail) {
-            int id = queue[head++];
-            Cell cell = maze.cell(id / maze.columns(), id % maze.columns());
-            for (Direction d : Direction.values()) {
-                Cell next = maze.neighbor(cell, d);
-                if (next == null || cell.hasWall(d)) continue;
-                int nextId = next.row() * maze.columns() + next.column();
-                if (distance[nextId] == -1) {
-                    distance[nextId] = distance[id] + 1;
-                    queue[tail++] = nextId;
+        Cell[] waiting = new Cell[rows * columns];
+        waiting[0] = maze.getStart();
+        distance[0][0] = 0;
+        int front = 0;
+        int back = 1;
+        while (front < back) {
+            Cell cell = waiting[front];
+            front++;
+            Cell[] neighbors = maze.getNeighbors(cell);
+            for (int i = 0; i < neighbors.length; i++) {
+                Cell next = neighbors[i];
+                if (next != null && maze.canMove(cell, next)
+                        && distance[next.getRow()][next.getColumn()] == -1) {
+                    distance[next.getRow()][next.getColumn()] = distance[cell.getRow()][cell.getColumn()] + 1;
+                    waiting[back] = next;
+                    back++;
                 }
             }
         }
         return distance;
     }
+
     private static MazeSolver solve(Maze maze) {
         MazeSolver solver = new MazeSolver(maze);
         int steps = 0;
-        while (!solver.isDone()) { solver.step(); check(++steps <= maze.size() + 1, "BFS must terminate"); }
-        solver.step();
+        while (!solver.isFinished()) {
+            solver.step();
+            steps++;
+            check(steps <= maze.getRows() * maze.getColumns() + 1, "Solver did not finish.");
+        }
         return solver;
     }
-    private static void validate(int rows, int columns, long seed) {
-        Maze maze = generated(rows, columns, seed);
-        Maze duplicate = generated(rows, columns, seed);
-        int edges = 0;
-        for (int r = 0; r < rows; r++) for (int c = 0; c < columns; c++) {
-            Cell cell = maze.cell(r, c);
-            for (Direction d : Direction.values()) {
-                Cell next = maze.neighbor(cell, d);
-                check(cell.hasWall(d) == duplicate.cell(r, c).hasWall(d), "Seed reproducibility");
-                if (next == null) check(cell.hasWall(d), "Outer boundary intact");
-                else {
-                    check(cell.hasWall(d) == next.hasWall(d.opposite()), "Reciprocal walls");
-                    if (!cell.hasWall(d)) edges++;
+
+    private static void testMaze(int rows, int columns) {
+        Maze maze = new Maze(rows, columns);
+        MazeGenerator generator = new MazeGenerator(maze);
+        int steps = 0;
+        while (!generator.isFinished()) {
+            generator.step();
+            steps++;
+            check(steps <= 2 * rows * columns, "Generator did not finish.");
+        }
+
+        int passages = 0;
+        int[][] distance = findDistances(maze);
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < columns; c++) {
+                Cell cell = maze.getCell(r, c);
+                check(cell.isVisited() && distance[r][c] >= 0, "Every cell must be reachable.");
+                if (r == 0) check(cell.hasTopWall(), "Top boundary must remain closed.");
+                if (c == 0) check(cell.hasLeftWall(), "Left boundary must remain closed.");
+                if (r == rows - 1) check(cell.hasBottomWall(), "Bottom boundary must remain closed.");
+                if (c == columns - 1) check(cell.hasRightWall(), "Right boundary must remain closed.");
+                if (r < rows - 1) {
+                    check(cell.hasBottomWall() == maze.getCell(r + 1, c).hasTopWall(), "Walls must match.");
+                    if (!cell.hasBottomWall()) passages++;
+                }
+                if (c < columns - 1) {
+                    check(cell.hasRightWall() == maze.getCell(r, c + 1).hasLeftWall(), "Walls must match.");
+                    if (!cell.hasRightWall()) passages++;
                 }
             }
         }
-        int[] distance = distances(maze);
-        for (int value : distance) check(value >= 0, "Every cell reachable");
-        check(edges / 2 == maze.size() - 1, "Connected graph with V-1 edges is a tree");
+        check(passages == rows * columns - 1, "Perfect maze needs exactly one fewer passage than cells.");
+
         MazeSolver solver = solve(maze);
-        check(solver.foundPath(), "Exit reachable");
-        check(solver.path().get(0) == maze.start(), "Path starts at entrance");
-        check(solver.path().get(solver.path().size() - 1) == maze.exit(), "Path ends at exit");
-        check(solver.path().size() - 1 == distance[maze.size() - 1], "Shortest path length");
-        for (int i = 1; i < solver.path().size(); i++)
-            check(maze.neighbors(solver.path().get(i - 1), true).contains(solver.path().get(i)), "Path respects walls");
-        check(solve(maze).path().size() == solver.path().size(), "Solver can run again");
-    }
-    public static void main(String[] args) throws Exception {
-        LinkedStack<Integer> stack = new LinkedStack<>();
-        LinkedQueue<Integer> queue = new LinkedQueue<>();
-        rejects(stack::pop, NoSuchElementException.class);
-        rejects(stack::peek, NoSuchElementException.class);
-        rejects(queue::dequeue, NoSuchElementException.class);
-        for (int i = 0; i < 100; i++) { stack.push(i); queue.enqueue(i); }
-        check(stack.size() == 100 && queue.size() == 100, "Container sizes");
-        for (int i = 0; i < 100; i++) {
-            check(stack.peek() == 99 - i && stack.pop() == 99 - i, "LIFO order");
-            check(queue.dequeue() == i, "FIFO order");
+        check(solver.hasFoundPath(), "Generated maze must have a solution.");
+        check(solver.getPathLength() == distance[rows - 1][columns - 1], "Path must be shortest.");
+        check(maze.getStart().isOnPath() && maze.getExit().isOnPath(), "Path must include both endpoints.");
+        int pathCells = 0;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < columns; c++) {
+                Cell cell = maze.getCell(r, c);
+                if (!cell.isOnPath()) continue;
+                pathCells++;
+                int connections = 0;
+                Cell[] neighbors = maze.getNeighbors(cell);
+                for (int i = 0; i < neighbors.length; i++) {
+                    Cell next = neighbors[i];
+                    if (next != null && next.isOnPath() && maze.canMove(cell, next)) connections++;
+                }
+                int expected = 2;
+                if (cell == maze.getStart() || cell == maze.getExit()) expected = 1;
+                if (rows * columns == 1) expected = 0;
+                check(connections == expected, "Path must form a continuous route through open passages.");
+            }
         }
-        check(stack.isEmpty() && queue.isEmpty(), "Empty after removal");
-        queue.enqueue(7); check(queue.dequeue() == 7, "Queue reuse after drain");
-        rejects(() -> new Maze(0, 10), IllegalArgumentException.class);
-        rejects(() -> new Maze(10, -1), IllegalArgumentException.class);
-        rejects(() -> new Maze(101, 1), IllegalArgumentException.class);
-        int[][] dimensions = {{1,1}, {1,30}, {30,1}, {2,2}, {10,10}, {30,30}, {7,19}, {100,100}};
-        for (int[] size : dimensions) for (long seed : new long[] {0, 42, -17, Long.MAX_VALUE})
-            validate(size[0], size[1], seed);
-        check(!solve(new Maze(2, 2)).foundPath(), "Disconnected maze reports no path");
-        Maze cycle = new Maze(2, 2);
-        cycle.carve(cycle.cell(0,0), cycle.cell(0,1));
-        cycle.carve(cycle.cell(0,1), cycle.cell(1,1));
-        cycle.carve(cycle.cell(0,0), cycle.cell(1,0));
-        cycle.carve(cycle.cell(1,0), cycle.cell(1,1));
-        check(solve(cycle).path().size() == 3, "BFS handles cycles and equal shortest routes");
-        SwingUtilities.invokeAndWait(() -> {
+        check(pathCells == solver.getPathLength() + 1, "Path length counts moves, not cells.");
+        check(solve(maze).getPathLength() == solver.getPathLength(), "Repeated solving must work.");
+    }
+
+    public static void main(String[] args) {
+        testContainers();
+        int[][] sizes = {{1,1}, {1,30}, {30,1}, {2,2}, {10,10}, {30,30}, {7,19}, {50,50}};
+        for (int i = 0; i < sizes.length; i++) {
+            for (int repeat = 0; repeat < 4; repeat++) testMaze(sizes[i][0], sizes[i][1]);
+        }
+        check(!solve(new Maze(2, 2)).hasFoundPath(), "Closed maze should have no solution.");
+        int[][] invalid = {{0,10}, {10,-1}, {51,1}, {1,51}};
+        for (int i = 0; i < invalid.length; i++) {
             try {
-                Maze maze = generated(20, 30, 42);
-                MazeSolver solver = solve(maze);
-                MazePanel panel = new MazePanel();
-                panel.setSize(1000, 720); panel.showState(maze, null, solver);
-                BufferedImage image = new BufferedImage(1000, 720, BufferedImage.TYPE_INT_RGB);
-                Graphics2D graphics = image.createGraphics();
-                panel.paint(graphics); graphics.dispose();
-                ImageIO.write(image, "png", new File("out/maze-preview.png"));
-                check(image.getRGB(500,360) != MazePanel.BACKGROUND.getRGB(), "Canvas renders maze");
-            } catch (Exception ex) { throw new RuntimeException(ex); }
-        });
-        System.out.println("PASS: " + assertions + " assertions, 32 seeded mazes, containers, edge cases and canvas rendering.");
+                new Maze(invalid[i][0], invalid[i][1]);
+                throw new AssertionError("Invalid size should be rejected.");
+            } catch (IllegalArgumentException expected) { checks++; }
+        }
+        Maze cycle = new Maze(2, 2);
+        cycle.removeWall(cycle.getCell(0,0), cycle.getCell(0,1));
+        cycle.removeWall(cycle.getCell(0,1), cycle.getCell(1,1));
+        cycle.removeWall(cycle.getCell(0,0), cycle.getCell(1,0));
+        cycle.removeWall(cycle.getCell(1,0), cycle.getCell(1,1));
+        check(solve(cycle).getPathLength() == 2, "BFS should handle loops and find a shortest path.");
+        System.out.println("PASS: 32 random mazes, stack, queue, boundaries, shortest paths and edge cases.");
+        System.out.println("Checks passed: " + checks);
     }
 }

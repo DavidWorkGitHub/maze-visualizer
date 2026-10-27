@@ -13,17 +13,17 @@ try {
     }
     if (!$compiler) { throw 'Install JDK 17 or newer and set JAVA_HOME to its folder.' }
     $javaBin = Split-Path $compiler
-    New-Item -ItemType Directory -Force out | Out-Null
+    New-Item -ItemType Directory -Force out/classes | Out-Null
     $sources = @(Get-ChildItem src/maze/*.java | ForEach-Object FullName)
-    & $compiler --release 8 -Xlint:-options -d out @sources
+    & $compiler --release 8 -Xlint:-options -d out/classes @sources
     if ($LASTEXITCODE -ne 0) { throw 'Compilation failed.' }
-    & "$javaBin/jar.exe" cfe out/maze-visualizer.jar maze.MazeApp -C out maze
+    & "$javaBin/jar.exe" cfe out/maze-visualizer.jar maze.MazeApp -C out/classes maze
     if ($LASTEXITCODE -ne 0) { throw 'Packaging failed.' }
     if ($Test) {
         $tests = @(Get-ChildItem test/maze/*.java | ForEach-Object FullName)
-        & $compiler --release 8 -Xlint:-options -cp out -d out/test @tests
+        & $compiler --release 8 -Xlint:-options -cp out/classes -d out/test @tests
         if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
-        & "$javaBin/java.exe" '-Djava.awt.headless=true' -cp 'out;out/test' maze.MazeTests
+        & "$javaBin/java.exe" '-Djava.awt.headless=true' -cp 'out/classes;out/test' maze.MazeTests
         if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
     }
     if ($Run) { & "$javaBin/java.exe" -jar out/maze-visualizer.jar }
