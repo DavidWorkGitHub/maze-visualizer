@@ -30,6 +30,13 @@ public class MazeApp extends JFrame implements ActionListener {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
+        // Explain each control when the mouse rests over it.
+        rowsField.setToolTipText("Number of rows, from 1 to 50. Try 10 to start.");
+        columnsField.setToolTipText("Number of columns, from 1 to 50. Try 10 to start.");
+        generateButton.setToolTipText("Create a new random maze using DFS.");
+        solveButton.setToolTipText("Find the shortest path after generation finishes.");
+        pauseButton.setToolTipText("Pause or resume the current animation.");
+
         JPanel heading = new JPanel(new GridLayout(2, 1));
         JLabel title = new JLabel("MAZE VISUALIZER", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 24));
@@ -49,7 +56,7 @@ public class MazeApp extends JFrame implements ActionListener {
 
         JPanel footer = new JPanel(new GridLayout(3, 1, 0, 4));
         footer.setBorder(new EmptyBorder(8, 16, 12, 16));
-        footer.add(new JLabel("Blue: visited    Orange: current cell    Green: final path"));
+        footer.add(new JLabel("White: unvisited    Blue: visited    Orange: current cell    Green: final path"));
         footer.add(new JLabel("Start: top-left (S)    Exit: bottom-right (E)"));
         footer.add(status);
         add(heading, BorderLayout.NORTH);
