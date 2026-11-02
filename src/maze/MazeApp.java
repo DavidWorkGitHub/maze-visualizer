@@ -14,9 +14,9 @@ import javax.swing.border.EmptyBorder;
 public class MazeApp extends JFrame implements ActionListener {
     private JTextField rowsField = new JTextField("20", 3);
     private JTextField columnsField = new JTextField("20", 3);
-    private JButton generateButton = new JButton("Generate");
+    private JButton generateButton = new JButton("Generate Maze");
     private JButton clearButton = new JButton("Clear");
-    private JButton solveButton = new JButton("Solve");
+    private JButton solveButton = new JButton("Solve Maze");
     private JButton pauseButton = new JButton("Pause");
     private JLabel status = new JLabel("Enter a size and click Generate.");
     private MazePanel canvas = new MazePanel();
