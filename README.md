@@ -74,6 +74,8 @@ For a demonstration, generate and solve 10 x 10, then 30 x 30. Pause during each
 
 ## Understand the code
 
+Use [DEMO_CHECKLIST.md](DEMO_CHECKLIST.md) to practise the demonstration and record your manual checks.
+
 Read [WALKTHROUGH.md](WALKTHROUGH.md) alongside the source. Start with `Cell`, then `Maze`, the stack and queue, the two algorithms, and finally the GUI.
 
 Git history records the original implementation and the later simplification. Use `git log --oneline` to see the actual commits. The history has not been rewritten to pretend the simpler version came first.
