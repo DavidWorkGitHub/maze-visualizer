@@ -37,6 +37,11 @@ public class MazeApp extends JFrame implements ActionListener {
         solveButton.setToolTipText("Find the shortest path after generation finishes.");
         pauseButton.setToolTipText("Pause or resume the current animation.");
 
+        // Alt + the letter activates a button without using the mouse.
+        generateButton.setMnemonic('G');
+        solveButton.setMnemonic('S');
+        pauseButton.setMnemonic('P');
+
         JPanel heading = new JPanel(new GridLayout(2, 1));
         JLabel title = new JLabel("MAZE VISUALIZER", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 24));
@@ -66,6 +71,8 @@ public class MazeApp extends JFrame implements ActionListener {
         generateButton.addActionListener(this);
         solveButton.addActionListener(this);
         pauseButton.addActionListener(this);
+        rowsField.addActionListener(this);
+        columnsField.addActionListener(this);
         solveButton.setEnabled(false);
         pauseButton.setEnabled(false);
 
@@ -79,7 +86,10 @@ public class MazeApp extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        if (event.getSource() == generateButton) {
+        // Pressing Enter in either size field also generates a maze.
+        if (event.getSource() == generateButton
+                || event.getSource() == rowsField
+                || event.getSource() == columnsField) {
             startGeneration();
         } else if (event.getSource() == solveButton) {
             startSolving();

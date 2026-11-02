@@ -30,6 +30,8 @@ The helper requires JDK 17 or newer and creates `out/maze-visualizer.jar`. You d
 3. When generation finishes, click **Solve** to watch BFS find the exit.
 4. Click **Pause / Resume** to stop or continue either animation.
 
+Keyboard controls: press **Enter** in either size field to generate a maze. Use **Alt+G** to generate, **Alt+S** to solve, and **Alt+P** to pause or resume. Solve is available once generation finishes.
+
 You can generate a new maze at any time, or solve a completed maze again. Invalid sizes show a helpful message. Blue cells have been visited, orange is the current cell, and green is the final path. The start is the top-left cell and the exit is the bottom-right cell. Letters are hidden when cells are too small to read.
 
 ## Classes and design choices
