@@ -63,10 +63,11 @@ public class MazeApp extends JFrame implements ActionListener {
         heading.add(controls);
         heading.setBorder(new EmptyBorder(12, 8, 4, 8));
 
-        JPanel footer = new JPanel(new GridLayout(3, 1, 0, 4));
+        JPanel footer = new JPanel(new GridLayout(4, 1, 0, 4));
         footer.setBorder(new EmptyBorder(8, 16, 12, 16));
         footer.add(new JLabel("White: unvisited    Blue: visited    Orange: current cell    Green: final path"));
         footer.add(new JLabel("Start: top-left (S)    Exit: bottom-right (E)"));
+        footer.add(new JLabel("Animation: one DFS or BFS step at a time"));
         footer.add(status);
         add(heading, BorderLayout.NORTH);
         add(canvas, BorderLayout.CENTER);
