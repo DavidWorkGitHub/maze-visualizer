@@ -46,7 +46,7 @@ public class MazeApp extends JFrame implements ActionListener {
         clearButton.setMnemonic('C');
 
         JPanel heading = new JPanel(new GridLayout(2, 1));
-        JLabel title = new JLabel("MAZE VISUALIZER", SwingConstants.CENTER);
+        JLabel title = new JLabel("MAZE VISUALIZER - DFS + BFS", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 24));
         title.setForeground(new Color(43, 57, 75));
         heading.add(title);
