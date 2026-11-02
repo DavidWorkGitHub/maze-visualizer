@@ -27,7 +27,7 @@ public class MazeApp extends JFrame implements ActionListener {
     private boolean generating = false;
 
     public MazeApp() {
-        super("Maze Visualizer");
+        super("Maze Visualizer - DFS + BFS");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
