@@ -15,6 +15,7 @@ public class MazeApp extends JFrame implements ActionListener {
     private JTextField rowsField = new JTextField("20", 3);
     private JTextField columnsField = new JTextField("20", 3);
     private JButton generateButton = new JButton("Generate");
+    private JButton clearButton = new JButton("Clear");
     private JButton solveButton = new JButton("Solve");
     private JButton pauseButton = new JButton("Pause");
     private JLabel status = new JLabel("Enter a size and click Generate.");
@@ -36,11 +37,13 @@ public class MazeApp extends JFrame implements ActionListener {
         generateButton.setToolTipText("Create a new random maze using DFS.");
         solveButton.setToolTipText("Find the shortest path after generation finishes.");
         pauseButton.setToolTipText("Pause or resume the current animation.");
+        clearButton.setToolTipText("Remove the current maze from the canvas.");
 
         // Alt + the letter activates a button without using the mouse.
         generateButton.setMnemonic('G');
         solveButton.setMnemonic('S');
         pauseButton.setMnemonic('P');
+        clearButton.setMnemonic('C');
 
         JPanel heading = new JPanel(new GridLayout(2, 1));
         JLabel title = new JLabel("MAZE VISUALIZER", SwingConstants.CENTER);
@@ -56,6 +59,7 @@ public class MazeApp extends JFrame implements ActionListener {
         controls.add(generateButton);
         controls.add(solveButton);
         controls.add(pauseButton);
+        controls.add(clearButton);
         heading.add(controls);
         heading.setBorder(new EmptyBorder(12, 8, 4, 8));
 
@@ -71,6 +75,7 @@ public class MazeApp extends JFrame implements ActionListener {
         generateButton.addActionListener(this);
         solveButton.addActionListener(this);
         pauseButton.addActionListener(this);
+        clearButton.addActionListener(this);
         rowsField.addActionListener(this);
         columnsField.addActionListener(this);
         solveButton.setEnabled(false);
@@ -93,6 +98,8 @@ public class MazeApp extends JFrame implements ActionListener {
             startGeneration();
         } else if (event.getSource() == solveButton) {
             startSolving();
+        } else if (event.getSource() == clearButton) {
+            clearMaze();
         } else if (event.getSource() == pauseButton) {
             if (timer.isRunning()) {
                 timer.stop();
@@ -128,6 +135,19 @@ public class MazeApp extends JFrame implements ActionListener {
             JOptionPane.showMessageDialog(this, "Enter whole numbers from 1 to 50 for rows and columns.",
                     "Invalid size", JOptionPane.WARNING_MESSAGE);
         }
+    }
+
+    private void clearMaze() {
+        timer.stop();
+        maze = null;
+        generator = null;
+        solver = null;
+        generating = false;
+        canvas.clearMaze();
+        solveButton.setEnabled(false);
+        pauseButton.setEnabled(false);
+        pauseButton.setText("Pause");
+        status.setText("Canvas cleared. Enter a size and click Generate.");
     }
 
     private void startSolving() {

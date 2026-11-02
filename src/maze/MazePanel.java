@@ -22,6 +22,13 @@ public class MazePanel extends JPanel {
         repaint();
     }
 
+    /** Remove the maze from the drawing area before the next demonstration. */
+    public void clearMaze() {
+        maze = null;
+        current = null;
+        repaint();
+    }
+
     public void setCurrent(Cell cell) {
         current = cell;
         repaint();
