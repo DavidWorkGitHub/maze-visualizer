@@ -152,6 +152,12 @@ public class MazeApp extends JFrame implements ActionListener {
     }
 
     private void startSolving() {
+        // Keep the action safe even if it is triggered before a maze exists.
+        if (maze == null) {
+            status.setText("Generate a maze before starting the solver.");
+            solveButton.setEnabled(false);
+            return;
+        }
         solver = new MazeSolver(maze);
         generating = false;
         canvas.setCurrent(null);
