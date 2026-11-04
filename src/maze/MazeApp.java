@@ -110,7 +110,8 @@ public class MazeApp extends JFrame implements ActionListener {
                 pauseButton.setText("Pause");
             }
         } else if (event.getSource() == timer) {
-            advanceAnimation();
+            // A queued timer event can arrive just after Clear is clicked.
+            if (maze != null) advanceAnimation();
         }
     }
 
